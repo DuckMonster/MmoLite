@@ -1,11 +1,16 @@
 #include <iostream>
 #include <net\server.hpp>
+#include "globals.hpp"
+#include "game.hpp"
 
 int main( ) {
 	std::cout << "Hello world!\n";
 
 	net::server s;
 	s.startup( 12345 );
+	network::server = &s;
+
+	Game game;
 
 	while (s.active( )) {
 		net::event e;
@@ -13,12 +18,12 @@ int main( ) {
 
 		switch (e.type( )) {
 			case net::EventType::eConnect:
-				std::cout << e.connect( ).id << " connected!\n";
+				game.playerJoin( e.connect( ).id );
 
 				break;
 
 			case net::EventType::eDisconnect:
-				std::cout << e.disconnect( ).id << " disconnected!\n";
+				game.playerLeave( e.disconnect( ).id );
 
 				break;
 
@@ -28,11 +33,13 @@ int main( ) {
 				break;
 
 			case net::EventType::ePacket:
-				std::cout << "Received " << e.packet( ).pkt.size( ) << " bytes from " << e.packet().id << "!\n";
-				s.send( e.packet( ).pkt, e.packet( ).id );
+				
+				game.handlePacket( e.packet( ).id, e.packet( ).pkt );
 
 				break;
 		}
+
+		game.logic( );
 
 		std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
 	}

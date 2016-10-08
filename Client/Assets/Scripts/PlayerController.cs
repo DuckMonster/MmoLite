@@ -3,17 +3,26 @@ using System.Collections;
 
 public class PlayerController : MonoBehaviour {
 
+	[SerializeField]
+	GameObject cameraSocketPrefab = null;
+
+	int id;
+	public int ID { get { return id; } }
+
 	void Start()
 	{
 
 	}
 
-	void Update()
+	public void Init(int id, bool isLocal)
 	{
-		Vector2 movementInput = new Vector2(
-			Input.GetAxisRaw("Horizontal"),
-			Input.GetAxisRaw("Vertical"));
+		this.id = id;
+		GetComponentInChildren<TextMesh>().text = id.ToString();
 
-		transform.Translate(new Vector3(movementInput.x, 0f, movementInput.y) * Time.deltaTime);
+		if (isLocal)
+		{
+			gameObject.AddComponent<LocalController>();
+			Instantiate(cameraSocketPrefab, transform);
+		}
 	}
 }
