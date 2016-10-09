@@ -3,16 +3,25 @@
 #include "globals.hpp"
 #include "game.hpp"
 
+typedef std::chrono::high_resolution_clock::time_point time_point;
+const long MICRO_PER_SECOND = 1000000;
+
 int main( ) {
 	std::cout << "Hello world!\n";
 
 	net::server s;
-	s.startup( 12345 );
+	s.startup( 15620 );
 	network::server = &s;
 
 	Game game;
+	time_point prev = std::chrono::high_resolution_clock::now( );
 
 	while (s.active( )) {
+		time_point now = std::chrono::high_resolution_clock::now( );
+		float delta = (float)std::chrono::duration_cast<std::chrono::microseconds>(now - prev).count( ) / MICRO_PER_SECOND;
+
+		prev = now;
+
 		net::event e;
 		s.pollEvent( e );
 

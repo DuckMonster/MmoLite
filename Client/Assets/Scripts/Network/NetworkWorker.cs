@@ -4,6 +4,7 @@ using System.Threading;
 using System.Collections.Generic;
 using System.Net;
 using System;
+using System.Diagnostics;
 
 class NetworkWorker
 {
@@ -59,12 +60,10 @@ class NetworkWorker
 		Packet pkt = null;
 
 		// Try to lock
-		if (Monitor.TryEnter( inQueue ))
+		lock (inQueue)
 		{
 			if (inQueue.Count > 0)
 				pkt = inQueue.Dequeue( );
-
-			Monitor.Exit( inQueue );
 		}
 
 		return pkt;
@@ -84,24 +83,31 @@ class NetworkWorker
 		{
 			Queue<Packet> pktQueue = null;
 
-			// See if the front queue has data in it
-			lock (FrontOutQueue)
+			do
 			{
-				if (FrontOutQueue.Count > 0)
-				{
-					pktQueue = FrontOutQueue;
-					SwapOutQueue( );
-				}
-			}
+				pktQueue = null;
 
-			if (pktQueue != null)
-			{
-				while (pktQueue.Count > 0)
+				// See if the front queue has data in it
+				lock (FrontOutQueue)
 				{
-					Packet pkt = pktQueue.Dequeue();
-					socket.Send( pkt.Data, pkt.Size, SocketFlags.None );
+					if (FrontOutQueue.Count > 0)
+					{
+						pktQueue = FrontOutQueue;
+						SwapOutQueue( );
+					}
 				}
-			}
+
+				if (pktQueue != null)
+				{
+					while (pktQueue.Count > 0)
+					{
+						Packet pkt = pktQueue.Dequeue();
+
+						// Send data
+						socket.Send( pkt.HeaderData );
+					}
+				}
+			} while (pktQueue != null);
 
 			Thread.Sleep( 1 );
 		}
@@ -112,6 +118,8 @@ class NetworkWorker
 		byte[] sizeBuffer = new byte[2];
 		byte[] readBuffer = new byte[1024];
 
+		NetworkStream stream = new NetworkStream(socket);
+
 		while (Connected)
 		{
 			int bytesRead = 0;
@@ -119,7 +127,7 @@ class NetworkWorker
 			// Read a 2 byte size header
 			do
 			{
-				bytesRead += socket.Receive( sizeBuffer );
+				bytesRead += socket.Receive( sizeBuffer, 2 - bytesRead, SocketFlags.None );
 			} while (bytesRead != 2 && bytesRead != 0);
 
 			short packetSize = BitConverter.ToInt16(sizeBuffer, 0);
@@ -128,7 +136,7 @@ class NetworkWorker
 			bytesRead = 0;
 			do
 			{
-				bytesRead += socket.Receive( readBuffer, packetSize, SocketFlags.None );
+				bytesRead += socket.Receive( readBuffer, packetSize - bytesRead, SocketFlags.None );
 			} while (bytesRead != packetSize && bytesRead != 0);
 
 			// Error handling
@@ -140,7 +148,6 @@ class NetworkWorker
 			lock (inQueue)
 			{
 				inQueue.Enqueue( pkt );
-				Debug.Log( "Received " + packetSize );
 			}
 		}
 	}

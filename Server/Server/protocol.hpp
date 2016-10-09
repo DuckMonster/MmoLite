@@ -1,6 +1,15 @@
 #pragma once
-enum MmoProtocol {
-	PlayerID,
-	PlayerJoin,
-	PlayerLeave
-};
+namespace protocol {
+	enum MmoProtocol {
+		Ping,
+
+		PlayerID,
+		PlayerJoin,
+		PlayerLeave,
+		PlayerPossess,
+
+		PlayerPosition,
+		PlayerRotation,
+		PlayerInput
+	};
+}

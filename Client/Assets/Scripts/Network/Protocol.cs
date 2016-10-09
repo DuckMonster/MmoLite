@@ -1,6 +1,13 @@
 ﻿enum Protocol
 {
+	Ping,
+
 	PlayerID,
 	PlayerJoin,
-	PlayerLeave
+	PlayerLeave,
+	PlayerPossess,
+
+	PlayerPosition,
+	PlayerRotation,
+	PlayerInput
 }

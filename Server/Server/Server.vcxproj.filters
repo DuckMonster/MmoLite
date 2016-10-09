@@ -13,27 +13,59 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Game">
+      <UniqueIdentifier>{42a35edc-4203-4c28-a0e0-15cca238bdf1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game">
+      <UniqueIdentifier>{0732bc0c-cb90-4f00-88c3-795251cf143c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game\Actor">
+      <UniqueIdentifier>{74387105-c938-4578-8ad9-df78bd0fa743}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\Actor">
+      <UniqueIdentifier>{b1c5c04d-00f0-4c92-ba67-c508bdadb13b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="game.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="globals.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="game.cpp">
+      <Filter>Source Files\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="actor.cpp">
+      <Filter>Source Files\Game\Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="playerinput.cpp">
+      <Filter>Source Files\Game\Actor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="game.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="protocol.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="globals.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="game.hpp">
+      <Filter>Header Files\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="actor.hpp">
+      <Filter>Header Files\Game\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="types.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="playerinput.hpp">
+      <Filter>Header Files\Game\Actor</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="types.cpp">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
