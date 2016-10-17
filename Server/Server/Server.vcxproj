@@ -119,17 +119,28 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="actor.cpp" />
+    <ClCompile Include="actorcontroller.cpp" />
     <ClCompile Include="game.cpp" />
     <ClCompile Include="globals.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="mathutils.cpp" />
+    <ClCompile Include="npccontroller.cpp" />
+    <ClCompile Include="playercontroller.cpp" />
     <ClCompile Include="playerinput.cpp" />
+    <ClCompile Include="timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="actor.hpp" />
+    <ClInclude Include="actorcontroller.hpp" />
+    <ClInclude Include="actortype.hpp" />
     <ClInclude Include="game.hpp" />
     <ClInclude Include="globals.hpp" />
+    <ClInclude Include="mathutils.hpp" />
+    <ClInclude Include="npccontroller.hpp" />
+    <ClInclude Include="playercontroller.hpp" />
     <ClInclude Include="playerinput.hpp" />
     <ClInclude Include="protocol.hpp" />
+    <ClInclude Include="timer.hpp" />
     <ClInclude Include="types.hpp" />
   </ItemGroup>
   <ItemGroup>

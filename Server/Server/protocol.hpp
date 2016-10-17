@@ -2,14 +2,15 @@
 namespace protocol {
 	enum MmoProtocol {
 		Ping,
-
 		PlayerID,
-		PlayerJoin,
-		PlayerLeave,
-		PlayerPossess,
 
-		PlayerPosition,
-		PlayerRotation,
+		ActorJoin,
+		ActorLeave,
+
+		ActorPosition,
+		ActorRotation,
+
+		PlayerPossess,
 		PlayerInput
 	};
 }

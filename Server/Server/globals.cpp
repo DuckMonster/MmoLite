@@ -1,5 +1,7 @@
 #include "globals.hpp"
 
+float game::delta				= 0.f;
+
 net::server* network::server	= nullptr;
 
 void network::sendTo( const net::packet & pkt, const player_id & player ) {

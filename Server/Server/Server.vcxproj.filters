@@ -25,6 +25,18 @@
     <Filter Include="Source Files\Game\Actor">
       <UniqueIdentifier>{b1c5c04d-00f0-4c92-ba67-c508bdadb13b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Game\Actor\Controllers">
+      <UniqueIdentifier>{8c02d91c-97b2-4358-97cb-94acc304368e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game\Actor\Controller">
+      <UniqueIdentifier>{d6c5d034-07d4-4b73-9c7d-d54241d23e3b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Utils">
+      <UniqueIdentifier>{56b10dfa-ff77-4248-82e7-a19830d8a2ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utils">
+      <UniqueIdentifier>{890cffec-1f87-494f-bcc5-bf818ee4f860}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -41,6 +53,21 @@
     </ClCompile>
     <ClCompile Include="playerinput.cpp">
       <Filter>Source Files\Game\Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="actorcontroller.cpp">
+      <Filter>Source Files\Game\Actor\Controller</Filter>
+    </ClCompile>
+    <ClCompile Include="playercontroller.cpp">
+      <Filter>Source Files\Game\Actor\Controller</Filter>
+    </ClCompile>
+    <ClCompile Include="npccontroller.cpp">
+      <Filter>Source Files\Game\Actor\Controller</Filter>
+    </ClCompile>
+    <ClCompile Include="timer.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="mathutils.cpp">
+      <Filter>Source Files\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -61,6 +88,24 @@
     </ClInclude>
     <ClInclude Include="playerinput.hpp">
       <Filter>Header Files\Game\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="actortype.hpp">
+      <Filter>Header Files\Game\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="actorcontroller.hpp">
+      <Filter>Header Files\Game\Actor\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="playercontroller.hpp">
+      <Filter>Header Files\Game\Actor\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="npccontroller.hpp">
+      <Filter>Header Files\Game\Actor\Controllers</Filter>
+    </ClInclude>
+    <ClInclude Include="timer.hpp">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="mathutils.hpp">
+      <Filter>Header Files\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

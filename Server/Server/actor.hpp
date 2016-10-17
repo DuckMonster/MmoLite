@@ -2,59 +2,76 @@
 #include <glm/vec3.hpp>
 #include <net/packet.hpp>
 #include <memory>
+
 #include "types.hpp"
+#include "protocol.hpp"
+#include "actortype.hpp"
 #include "playerinput.hpp"
+#include "actorcontroller.hpp"
 
 class Game;
 class Actor {
 public:
-	Actor( Game* game );
+	Actor( ActorType type, Game* game );
+	~Actor( );
 
-	void				setID( const actor_id& id ) { this->id = id; }
-	const size_t		getID( ) { return id; }
+	virtual void						logic( );
 
-	glm::vec3			getPosition( ) { return position; }
-	void				setPosition( const glm::vec3& position );
+	Game* const							getGame( ) { return game; }
 
-	float				getRotation( ) { return rotation; }
-	void				setRotation( const float rotation );
+	void								setID( const actor_id& id ) { this->id = id; }
+	const size_t						getID( ) { return id; }
 
-	PlayerInput&		getInput( ) { return input; }
-	void				setInput( const PlayerInput& input );
+	glm::vec3							getPosition( ) { return position; }
+	void								setPosition( const glm::vec3& position );
 
-	void				sendExistance( const player_id& player );
-	void				sendExistance( const player_list& players );
+	float								getRotation( ) { return rotation; }
+	void								setRotation( const float rotation );
 
-	void				sendLeave( const player_id& player );
-	void				sendLeave( const player_list& players );
+	const ActorType						getType( ) { return type; }
+	ActorController*					getController( ) { return controller.get( ); }
 
-	void				sendPossess( const player_id& player );
+	template<typename T>
+	T*									getController( ) { return std::dynamic_pointer_cast<T>(controller).get( ); }
 
-	void				sendPosition( const player_id& player );
-	void				sendPosition( const player_list& players );
-
-	void				sendRotation( const player_id& player );
-	void				sendRotation( const player_list& players );
-
-	void				sendInput( const player_id& player );
-	void				sendInput( const player_list& players );
+	void								send( protocol::MmoProtocol msg );
+	void								send( protocol::MmoProtocol msg, const player_id& player );
+	void								send( protocol::MmoProtocol msg, const player_list& players );
 
 private:
-	net::packet			existancePacket( );
-	net::packet			leavePacket( );
-	net::packet			possessPacket( );
-	net::packet			positionPacket( );
-	net::packet			rotationPacket( );
-	net::packet			inputPacket( );
+	template<typename CollectionType>
+	void								doSend( protocol::MmoProtocol msg, const CollectionType& players );
 
-	Game* const			game;
-	actor_id			id;
+	net::packet							existancePacket( );
+	net::packet							leavePacket( );
+	net::packet							positionPacket( );
+	net::packet							rotationPacket( );
 
-	glm::vec3			position;
-	float				rotation;
+	Game* const							game;
+	actor_id							id;
+	const ActorType						type;
 
-	PlayerInput			input;
+	glm::vec3							position;
+	float								rotation;
+
+	std::shared_ptr<ActorController>	controller;
 };
+
+template<typename CollectionType>
+inline void Actor::doSend( protocol::MmoProtocol msg, const CollectionType & players ) {
+	switch (msg) {
+		case protocol::ActorJoin:
+			network::sendTo( existancePacket( ), players );
+			send( protocol::ActorPosition, players );
+			send( protocol::ActorRotation, players );
+
+			break;
+
+		case protocol::ActorPosition: network::sendTo( positionPacket( ), players ); break;
+		case protocol::ActorRotation: network::sendTo( rotationPacket( ), players ); break;
+		case protocol::ActorLeave: network::sendTo( leavePacket( ), players ); break;
+	}
+}
 
 typedef std::shared_ptr<Actor> actor_ptr;
 typedef std::array<actor_ptr, 512> actor_array;

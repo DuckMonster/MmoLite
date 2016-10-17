@@ -2,38 +2,37 @@
 using System.Collections;
 using System.IO;
 
-public class LocalController : MonoBehaviour
+public class LocalInput : MonoBehaviour
 {
 
-	PlayerController Player { get { return GetComponent<PlayerController>( ); } }
 	PlayerInput prevInput = new PlayerInput();
+	PlayerController playerController;
 
-	// Use this for initialization
-	void Start( )
+	public void Init( PlayerController controller )
 	{
-
+		playerController = controller;
 	}
 
 	public void SendPosition( )
 	{
 		BStream str = new BStream();
 
-		str.Writer.Write( (short)Protocol.PlayerPosition );
+		str.Writer.Write( (short)Protocol.ActorPosition );
 		str.Writer.Write( transform.position.x );
 		str.Writer.Write( transform.position.y );
 		str.Writer.Write( transform.position.z );
 
-		Player.NetController.SendToServer( str );
+		NetworkController.Current.SendToServer( str );
 	}
 
 	public void SendRotation( )
 	{
 		BStream str = new BStream();
 
-		str.Writer.Write( (short)Protocol.PlayerRotation );
+		str.Writer.Write( (short)Protocol.ActorRotation );
 		str.Writer.Write( transform.eulerAngles.y );
 
-		Player.NetController.SendToServer( str );
+		NetworkController.Current.SendToServer( str );
 	}
 
 	public void SendInput( PlayerInput input )
@@ -46,15 +45,13 @@ public class LocalController : MonoBehaviour
 		str.Writer.Write( (short)Protocol.PlayerInput );
 		str.Writer.Write( input.Encode( ) );
 
-		Player.NetController.SendToServer( str );
+		NetworkController.Current.SendToServer( str );
 	}
 
 	void Update( )
 	{
 		PlayerInput input = new PlayerInput();
-
 		input.Forward = Input.GetAxisRaw( "Vertical" );
-
 
 		// Mouse turning
 		if (Input.GetMouseButton( 1 ))
@@ -65,8 +62,9 @@ public class LocalController : MonoBehaviour
 
 			float horizontal = Input.GetAxisRaw("Mouse X");
 
-			transform.Rotate( new Vector3( 0f, horizontal, 0f ) );
-			SendRotation( );
+			playerController.Movement.Turn( horizontal );
+			if (Mathf.Abs( Mathf.DeltaAngle( playerController.Actor.Rotation, playerController.Actor.RemoteRotation ) ) > 2f)
+				SendRotation( );
 		}
 		else
 		{
@@ -79,7 +77,7 @@ public class LocalController : MonoBehaviour
 		if (input != prevInput)
 		{
 			SendInput( input );
-			Player.PInput = input;
+			playerController.PlayerInput = input;
 		}
 
 		if (Input.GetKeyDown( KeyCode.Space ))

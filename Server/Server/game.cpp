@@ -6,14 +6,20 @@
 #include "protocol.hpp"
 #include "globals.hpp"
 
+#include "playercontroller.hpp"
+#include "npccontroller.hpp"
+
 Game::Game( ) :
 	playerList( ),
 	actorArray( ),
 	playerActorMap( ) {
+
+	spawnActor( new Actor( ActorType::NPC, this ) );
 }
 
 void Game::logic( ) {
-	// Poll the server
+	for (actor_ptr& a : actorArray)
+		if (a) a->logic( );
 }
 
 void Game::playerJoin( const size_t playerID ) {
@@ -30,15 +36,15 @@ void Game::playerJoin( const size_t playerID ) {
 	}
 
 	// Send all actors to the new player
-	for (actor_ptr a : actorArray)
+	for (actor_ptr& a : actorArray)
 		if (a)
-			a->sendExistance( playerID );
+			a->send( protocol::ActorJoin, playerID );
 
 	// Spawn new actor
-	actor_id newActor = spawnActor( new Actor( this ) );
+	actor_id newActor = spawnActor( new Actor( ActorType::Player, this ) );
 	playerActorMap[playerID] = newActor;
 
-	actorArray[newActor]->sendPossess( playerID );
+	actorArray[newActor]->getController<PlayerController>( )->sendPossess( playerID );
 
 	std::cout << playerID << " connected!\n";
 }
@@ -49,7 +55,7 @@ void Game::playerLeave( const size_t playerID ) {
 	if (it != playerList.end( ))
 		playerList.erase( it );
 
-	getPlayerActor( playerID )->sendLeave( playerList );
+	getPlayerActor( playerID )->send( protocol::ActorLeave );
 	actorArray[playerActorMap[playerID]] = actor_ptr( );
 
 	std::cout << playerID << " disconnected!\n";
@@ -65,7 +71,7 @@ void Game::handlePacket( const size_t playerID, const net::packet & pkt ) {
 			network::sendTo( pkt, playerID );
 		} break;
 
-		case protocol::PlayerPosition: {
+		case protocol::ActorPosition: {
 			float x = str.read<float>( ),
 				y = str.read<float>( ),
 				z = str.read<float>( );
@@ -73,7 +79,7 @@ void Game::handlePacket( const size_t playerID, const net::packet & pkt ) {
 			getPlayerActor( playerID )->setPosition( glm::vec3( x, y, z ) );
 		} break;
 
-		case protocol::PlayerRotation: {
+		case protocol::ActorRotation: {
 			float rotation = str.read<float>( );
 
 			getPlayerActor( playerID )->setRotation( rotation );
@@ -82,7 +88,7 @@ void Game::handlePacket( const size_t playerID, const net::packet & pkt ) {
 		case protocol::PlayerInput: {
 			char input = str.read<char>( );
 
-			getPlayerActor( playerID )->setInput( input );
+			getPlayerActor( playerID )->getController<PlayerController>( )->setInput( input );
 		} break;
 	}
 }
@@ -97,7 +103,7 @@ actor_ptr Game::getPlayerActor( const player_id & playerID ) {
 }
 
 void Game::sendToAll( const net::packet & pkt ) {
-	for (size_t id : playerList) {
+	for (size_t& id : playerList) {
 		network::server->send( pkt, id );
 	}
 }
@@ -117,7 +123,7 @@ actor_id Game::spawnActor( Actor* actor ) {
 		actorArray[id] = actor_ptr( actor );
 
 		actor->setID( id );
-		actor->sendExistance( getPlayers( ) );
+		actor->send( protocol::ActorJoin );
 	}
 
 	return id;

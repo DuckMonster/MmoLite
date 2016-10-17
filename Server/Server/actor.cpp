@@ -6,78 +6,54 @@
 
 #include "protocol.hpp"
 #include "globals.hpp"
+#include "playercontroller.hpp"
+#include "npccontroller.hpp"
 
-Actor::Actor( Game * game ) :
+Actor::Actor( ActorType type, Game * game ) :
 	game( game ),
 	id( -1 ),
+	type( type ),
 
 	position( glm::vec3( 23.02f, 13.06f, 32.18f ) ),
-	rotation( 0.f ),
+	rotation( 0.f ) {
 
-	input( ) {
+	// Create controller
+	switch (type) {
+		case ActorType::Player:
+			controller = std::shared_ptr<ActorController>( new PlayerController( this ) );
+			break;
+
+		case ActorType::NPC:
+			controller = std::shared_ptr<ActorController>( new NpcController( this ) );
+			break;
+	}
+}
+
+Actor::~Actor( ) {
+}
+
+void Actor::logic( ) {
+	getController( )->logic( );
 }
 
 void Actor::setPosition( const glm::vec3 & position ) {
 	this->position = position;
-	sendPosition( game->getPlayers( ) );
+	send( protocol::ActorPosition );
 }
 
 void Actor::setRotation( const float rotation ) {
 	this->rotation = rotation;
-	sendRotation( game->getPlayers( ) );
+	send( protocol::ActorRotation );
 }
 
-void Actor::setInput( const PlayerInput & input ) {
-	this->input = input;
-	sendInput( game->getPlayers( ) );
+void Actor::send( protocol::MmoProtocol msg ) {
+	doSend( msg, getGame( )->getPlayers( ) );
 }
-
-void Actor::sendExistance( const player_id & player ) {
-	network::sendTo( existancePacket( ), player );
-	sendPosition( player );
-	sendRotation( player );
+void Actor::send( protocol::MmoProtocol msg, const player_id& player ) {
+	doSend( msg, player );
 }
-
-void Actor::sendExistance( const player_list & players ) {
-	network::sendTo( existancePacket( ), players );
-	sendPosition( players );
-	sendRotation( players );
-}
-
-void Actor::sendLeave( const player_id & player ) {
-	network::sendTo( leavePacket( ), player );
-}
-
-void Actor::sendLeave( const player_list & players ) {
-	network::sendTo( leavePacket( ), players );
-}
-
-void Actor::sendPossess( const player_id & player ) {
-	network::sendTo( possessPacket( ), player );
-}
-
-void Actor::sendPosition( const player_id & player ) {
-	network::sendTo( positionPacket( ), player );
-}
-
-void Actor::sendPosition( const player_list & players ) {
-	network::sendTo( positionPacket( ), players );
-}
-
-void Actor::sendRotation( const player_id & player ) {
-	network::sendTo( rotationPacket( ), player );
-}
-
-void Actor::sendRotation( const player_list & players ) {
-	network::sendTo( rotationPacket( ), players );
-}
-
-void Actor::sendInput( const player_id & player ) {
-	network::sendTo( inputPacket( ), player );
-}
-
-void Actor::sendInput( const player_list & players ) {
-	network::sendTo( inputPacket( ), players );
+void Actor::send( protocol::MmoProtocol msg, const player_list& players ) {
+	doSend( msg, players );
 }
 
 
@@ -85,8 +61,9 @@ void Actor::sendInput( const player_list & players ) {
 net::packet Actor::existancePacket( ) {
 	bstream str;
 
-	str.write<short>( protocol::PlayerJoin );
+	str.write<short>( protocol::ActorJoin );
 	str.write<short>( id );
+	str.write<short>( type );
 
 	return net::packet( str.begin( ), str.size( ) );
 }
@@ -94,16 +71,7 @@ net::packet Actor::existancePacket( ) {
 net::packet Actor::leavePacket( ) {
 	bstream str;
 
-	str.write<short>( protocol::PlayerLeave );
-	str.write<short>( id );
-
-	return net::packet( str.begin( ), str.size( ) );
-}
-
-net::packet Actor::possessPacket( ) {
-	bstream str;
-
-	str.write<short>( protocol::PlayerPossess );
+	str.write<short>( protocol::ActorLeave );
 	str.write<short>( id );
 
 	return net::packet( str.begin( ), str.size( ) );
@@ -112,7 +80,7 @@ net::packet Actor::possessPacket( ) {
 net::packet Actor::positionPacket( ) {
 	bstream str;
 
-	str.write<short>( protocol::PlayerPosition );
+	str.write<short>( protocol::ActorPosition );
 	str.write<short>( id );
 
 	str.write<float>( position.x );
@@ -125,21 +93,10 @@ net::packet Actor::positionPacket( ) {
 net::packet Actor::rotationPacket( ) {
 	bstream str;
 
-	str.write<short>( protocol::PlayerRotation );
+	str.write<short>( protocol::ActorRotation );
 	str.write<short>( id );
 
 	str.write<float>( rotation );
-
-	return net::packet( str.begin( ), str.size( ) );
-}
-
-net::packet Actor::inputPacket( ) {
-	bstream str;
-
-	str.write<short>( protocol::PlayerInput );
-	str.write<short>( id );
-
-	str.write<char>( input.encode( ) );
 
 	return net::packet( str.begin( ), str.size( ) );
 }

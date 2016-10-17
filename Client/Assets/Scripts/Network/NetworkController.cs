@@ -5,23 +5,29 @@ using System.Net.Sockets;
 using System.Net;
 using System.IO;
 using System.Collections.Generic;
+using System.Threading;
 
 public class NetworkController : MonoBehaviour
 {
-	[SerializeField]
-	GameObject playerPrefab = null;
-	[SerializeField]
-	Transform playerSpawn;
+	static NetworkController current;
+	public static NetworkController Current { get { return current; } }
 
-	Timer tempTimer = new Timer(1f);
+	Timer pingTimer = new Timer(0.4f);
 	NetworkWorker worker;
-
-	Dictionary<int, PlayerController> playerList = new Dictionary<int, PlayerController>();
 
 	System.Diagnostics.Stopwatch pingWatch = new System.Diagnostics.Stopwatch();
 
+	PacketManager packetManager;
+
+	void Awake( )
+	{
+		current = this;
+		packetManager = GetComponent<PacketManager>( );
+	}
+
 	void Start( )
 	{
+		//Application.targetFrameRate = 120;
 		worker = new NetworkWorker( new IPEndPoint( IPAddress.Parse( "90.230.69.29" ), 15620 ) );
 	}
 
@@ -46,7 +52,10 @@ public class NetworkController : MonoBehaviour
 		{
 			case Protocol.Ping:
 				{
-					print( "Ping: " + pingWatch.ElapsedMilliseconds );
+					long ms = pingWatch.ElapsedMilliseconds;
+
+					FindObjectOfType<UnityEngine.UI.Text>( ).text = "Ping: " + worker.Latency + " / " + pingWatch.ElapsedMilliseconds + " ms\n" +
+						"FPS: " + (int)(1f / Time.deltaTime);
 				}
 				break;
 
@@ -57,73 +66,8 @@ public class NetworkController : MonoBehaviour
 				}
 				break;
 
-			case Protocol.PlayerJoin:
-				{
-					int id = reader.ReadInt16();
-
-					print( "Player " + id + " joined!" );
-
-					GameObject newPlayer = (GameObject)Instantiate(playerPrefab, playerSpawn.position, Quaternion.identity);
-
-					playerList[id] = newPlayer.GetComponent<PlayerController>( );
-					playerList[id].Init( id, this );
-				}
-				break;
-
-			case Protocol.PlayerPossess:
-				{
-					int id = reader.ReadInt16();
-
-					if (playerList.ContainsKey( id ))
-						playerList[id].Possess( );
-				}
-				break;
-
-			case Protocol.PlayerLeave:
-				{
-					int id = reader.ReadInt16();
-
-					print( "Player " + id + " left!" );
-
-					if (playerList.ContainsKey( id ))
-						Destroy( playerList[id].gameObject );
-				}
-				break;
-
-			case Protocol.PlayerPosition:
-				{
-					int id = reader.ReadInt16();
-
-					Vector3 pos = new Vector3(
-						reader.ReadSingle(),
-						reader.ReadSingle(),
-						reader.ReadSingle());
-
-					if (playerList.ContainsKey( id ))
-						playerList[id].ReceivePosition( pos );
-				}
-				break;
-
-			case Protocol.PlayerRotation:
-				{
-					int id = reader.ReadInt16();
-
-					float rotation = reader.ReadSingle();
-
-					if (playerList.ContainsKey( id ))
-						playerList[id].ReceiveRotation( rotation );
-				}
-				break;
-
-			case Protocol.PlayerInput:
-				{
-					int id = reader.ReadInt16();
-
-					byte input = reader.ReadByte();
-
-					if (playerList.ContainsKey( id ))
-						playerList[id].ReceiveInput( input );
-				}
+			default:
+				packetManager.HandlePacket( pkt );
 				break;
 		}
 	}
@@ -131,19 +75,18 @@ public class NetworkController : MonoBehaviour
 	void Update( )
 	{
 		PollWorker( );
-		tempTimer.Update( Time.deltaTime );
 
-		if (tempTimer.Done)
+		pingTimer.Update( Time.deltaTime );
+		if (pingTimer.Done)
 		{
+			pingTimer.Reset( );
+			pingWatch.Reset( );
+			pingWatch.Start( );
+
 			BStream stream = new BStream();
 			stream.Writer.Write( (short)Protocol.Ping );
 
 			worker.Send( new Packet( stream.ToArray, (int)stream.Length ) );
-
-			tempTimer.Reset( );
-
-			pingWatch.Reset( );
-			pingWatch.Start( );
 		}
 	}
 

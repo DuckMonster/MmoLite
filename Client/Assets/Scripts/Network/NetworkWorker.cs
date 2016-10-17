@@ -5,27 +5,29 @@ using System.Collections.Generic;
 using System.Net;
 using System;
 using System.Diagnostics;
+using System.Linq;
 
 class NetworkWorker
 {
 	Socket socket;
 
 	bool connected = false;
-	bool Connected { get { return connected; } }
+	public bool Connected { get { return connected; } }
 
 	Thread outThread, inThread;
 
 	Queue<Packet> inQueue = new Queue<Packet>();
-	Queue<Packet>[] outQueues = { new Queue<Packet>(), new Queue<Packet>() };
-	int outQueueIndex = 0;
+	Queue<Packet> outQueue = new Queue<Packet>();
 
-	Queue<Packet> FrontOutQueue { get { return outQueues[outQueueIndex % outQueues.Length]; } }
-	void SwapOutQueue( ) { outQueueIndex++; }
+	Stopwatch pingWatch;
+	long latency = -1;
+	public long Latency { get { return latency; } }
 
 	public NetworkWorker( IPEndPoint endpoint )
 	{
 		socket = new Socket( AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp );
 		socket.Connect( endpoint );
+		socket.NoDelay = true;
 
 		connected = true;
 
@@ -45,11 +47,21 @@ class NetworkWorker
 		socket.Close( );
 
 		connected = false;
+
+		Application.Quit( );
 	}
 
 	public void Shutdown( )
 	{
 		Disconnect( );
+
+		lock (outQueue)
+		{
+			lock (inQueue)
+			{
+				Monitor.PulseAll( outQueue );
+			}
+		}
 
 		outThread.Join( );
 		inThread.Join( );
@@ -71,9 +83,10 @@ class NetworkWorker
 
 	public void Send( Packet pkt )
 	{
-		lock (FrontOutQueue)
+		lock (outQueue)
 		{
-			FrontOutQueue.Enqueue( pkt );
+			outQueue.Enqueue( pkt );
+			Monitor.PulseAll( outQueue );
 		}
 	}
 
@@ -81,35 +94,29 @@ class NetworkWorker
 	{
 		while (Connected)
 		{
-			Queue<Packet> pktQueue = null;
-
-			do
+			lock (outQueue)
 			{
-				pktQueue = null;
-
-				// See if the front queue has data in it
-				lock (FrontOutQueue)
+				while (outQueue.Count > 0)
 				{
-					if (FrontOutQueue.Count > 0)
-					{
-						pktQueue = FrontOutQueue;
-						SwapOutQueue( );
-					}
+					Packet pkt = outQueue.Dequeue();
+
+					byte[] headerData = BitConverter.GetBytes((short)pkt.Size);
+
+					// Intercept ping protocol
+					if (PacketIsPing( pkt ))
+						pingWatch = Stopwatch.StartNew( );
+
+					// Header
+					socket.Send( headerData );
+
+					// Send data
+					socket.Send( pkt.Data );
+
+					//UnityEngine.Debug.Log("Sent in " + lockWatch.ElapsedMilliseconds);
 				}
 
-				if (pktQueue != null)
-				{
-					while (pktQueue.Count > 0)
-					{
-						Packet pkt = pktQueue.Dequeue();
-
-						// Send data
-						socket.Send( pkt.HeaderData );
-					}
-				}
-			} while (pktQueue != null);
-
-			Thread.Sleep( 1 );
+				Monitor.Wait( outQueue );
+			}
 		}
 	}
 
@@ -145,10 +152,19 @@ class NetworkWorker
 
 			Packet pkt = new Packet(readBuffer, packetSize);
 
+			// Received ping
+			if (PacketIsPing( pkt ) && pingWatch != null)
+				latency = pingWatch.ElapsedMilliseconds;
+
 			lock (inQueue)
 			{
 				inQueue.Enqueue( pkt );
 			}
 		}
+	}
+
+	bool PacketIsPing( Packet pkt )
+	{
+		return pkt.Size == 2 && Enumerable.SequenceEqual( pkt.Data, BitConverter.GetBytes( (short)Protocol.Ping ) );
 	}
 }

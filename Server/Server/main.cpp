@@ -7,7 +7,7 @@ typedef std::chrono::high_resolution_clock::time_point time_point;
 const long MICRO_PER_SECOND = 1000000;
 
 int main( ) {
-	std::cout << "Hello world!\n";
+	std::cout << "Server started at port 15620.\n";
 
 	net::server s;
 	s.startup( 15620 );
@@ -16,36 +16,47 @@ int main( ) {
 	Game game;
 	time_point prev = std::chrono::high_resolution_clock::now( );
 
+	float t = 0.f;
+
 	while (s.active( )) {
 		time_point now = std::chrono::high_resolution_clock::now( );
 		float delta = (float)std::chrono::duration_cast<std::chrono::microseconds>(now - prev).count( ) / MICRO_PER_SECOND;
+		game::delta = delta;
 
 		prev = now;
 
+		t += delta;
+		if (t >= 2.f) {
+			t = 0.f;
+			std::cout << delta * 1000.f << " ms\n";
+		}
+
 		net::event e;
-		s.pollEvent( e );
+		int n = 0;
 
-		switch (e.type( )) {
-			case net::EventType::eConnect:
-				game.playerJoin( e.connect( ).id );
+		while (s.pollEvent( e )) {
+			switch (e.type( )) {
+				case net::EventType::eConnect:
+					game.playerJoin( e.connect( ).id );
 
-				break;
+					break;
 
-			case net::EventType::eDisconnect:
-				game.playerLeave( e.disconnect( ).id );
+				case net::EventType::eDisconnect:
+					game.playerLeave( e.disconnect( ).id );
 
-				break;
+					break;
 
-			case net::EventType::eError:
-				std::cout << "Handled an event\n";
+				case net::EventType::eError:
+					std::cout << "Handled an event\n";
 
-				break;
+					break;
 
-			case net::EventType::ePacket:
-				
-				game.handlePacket( e.packet( ).id, e.packet( ).pkt );
+				case net::EventType::ePacket:
 
-				break;
+					game.handlePacket( e.packet( ).id, e.packet( ).pkt );
+
+					break;
+			}
 		}
 
 		game.logic( );
